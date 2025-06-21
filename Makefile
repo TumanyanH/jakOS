@@ -13,6 +13,7 @@ all: $(ISO)
 
 $(ISO): $(KERNEL)
 	mkdir -p $(OUT_DIR)/iso/boot/grub
+	mkdir -p $(dir $(ISO))
 	cp $(KERNEL) $(OUT_DIR)/iso/boot/kernel
 	cp boot/grub/grub.cfg $(OUT_DIR)/iso/boot/grub
 	grub-mkrescue -o $(ISO) $(OUT_DIR)/iso
