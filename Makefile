@@ -28,5 +28,11 @@ clean:
 
 install-deps:
 	sudo apt update && \
-	sudo apt install -y build-essential grub-pc-bin xorriso qemu-system-i386 \
-	                    gcc-i686-linux-gnu binutils-i686-linux-gnu
+	sudo apt install -y \
+	    build-essential \
+	    gcc-i686-linux-gnu \
+	    binutils-i686-linux-gnu \
+	    grub-pc-bin \
+	    xorriso \
+	    qemu-system-i386 \
+	    mtools
