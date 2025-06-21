@@ -25,3 +25,8 @@ run: $(ISO)
 
 clean:
 	rm -rf $(OUT_DIR)
+
+install-deps:
+	sudo apt update && \
+	sudo apt install -y build-essential grub-pc-bin xorriso qemu-system-i386 \
+	                    gcc-i686-linux-gnu binutils-i686-linux-gnu
