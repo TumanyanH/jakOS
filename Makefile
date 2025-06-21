@@ -1,32 +1,60 @@
-CC=i686-linux-gnu-gcc
-LD=i686-linux-gnu-ld
-NASM=nasm
-CFLAGS=-m32 -ffreestanding -O2 -Wall -Wextra
-LDFLAGS=-m elf_i386 -T src/linker.ld -nostdlib
-OUT_DIR=build
-KERNEL=$(OUT_DIR)/kernel
-ISO=$(OUT_DIR)/jakos.iso
+TARGET = kernel-001
+BUILD_DIR = build
+ISO_DIR = isodir
+ISO = jakos.iso
 
-.PHONY: all clean run iso
+SRC_C = $(shell find src -name '*.c')
+SRC_ASM = src/multiboot_header.asm
+OBJ_C = $(patsubst src/%.c, $(BUILD_DIR)/%.o, $(SRC_C))
+OBJ_ASM = $(BUILD_DIR)/multiboot_header.o
 
-all: $(ISO)
+CC = i686-elf-gcc
+LD = i686-elf-ld
+NASM = nasm
+CFLAGS = -ffreestanding -O2 -Wall -Wextra -Iinclude -Isrc/kernel
+LDFLAGS = -T linker.ld
 
-$(ISO): $(KERNEL)
-	mkdir -p $(OUT_DIR)/iso/boot/grub
-	mkdir -p $(dir $(ISO))
-	cp $(KERNEL) $(OUT_DIR)/iso/boot/kernel
-	cp boot/grub/grub.cfg $(OUT_DIR)/iso/boot/grub
-	grub-mkrescue -o $(ISO) $(OUT_DIR)/iso
+.PHONY: all clean iso run check_deps
 
-$(KERNEL): src/kernel.c src/multiboot_header.asm src/linker.ld
-	mkdir -p $(OUT_DIR)
-	$(NASM) -f elf32 src/multiboot_header.asm -o $(OUT_DIR)/multiboot_header.o
-	$(CC) $(CFLAGS) -c src/kernel.c -o $(OUT_DIR)/kernel.o
-	$(LD) $(LDFLAGS) $(OUT_DIR)/multiboot_header.o $(OUT_DIR)/kernel.o -o $(KERNEL)
+all: $(BUILD_DIR)/$(TARGET)
 
-run: $(ISO)
+check_deps:
+	sudo apt update && sudo apt install -y build-essential nasm grub-pc-bin xorriso qemu-system-i386
+
+# Compile C source files
+$(BUILD_DIR)/%.o: src/%.c
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Assemble idt_load.asm
+$(BUILD_DIR)/idt_load.o: src/kernel/idt_load.asm
+	mkdir -p $(dir $@)
+	nasm -f elf32 $< -o $@
+
+$(BUILD_DIR)/keyboard_handler.o: src/kernel/keyboard_handler.asm
+	nasm -f elf32 $< -o $@
+
+# Assemble the multiboot header
+$(OBJ_ASM): $(SRC_ASM)
+	mkdir -p $(dir $@)
+	$(NASM) -f elf32 $< -o $@
+
+# Link the kernel binary
+$(BUILD_DIR)/$(TARGET): $(OBJ_ASM) $(OBJ_C) $(BUILD_DIR)/idt_load.o
+	$(LD) $(LDFLAGS) -o $@ $^
+
+# Build ISO image
+iso: all
+	mkdir -p $(ISO_DIR)/boot/grub
+	cp $(BUILD_DIR)/$(TARGET) $(ISO_DIR)/boot/$(TARGET)
+	cp boot/grub/grub.cfg $(ISO_DIR)/boot/grub
+	grub-mkrescue -o $(ISO) $(ISO_DIR)
+
+# Run with QEMU
+run: iso
 	qemu-system-i386 -cdrom $(ISO)
 
+# Clean build artifacts
 clean:
-	rm -rf $(OUT_DIR)
-	rm -rf iso
+	rm -rf $(BUILD_DIR) $(ISO_DIR) $(ISO)
+
