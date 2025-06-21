@@ -1,4 +1,4 @@
-kernel_main () {
+int kernel_main () {
     char *video = (char*) 0xb8000;
     const char *msg = "Hello from MyOS!";
     for (int i = 0; msg[i] != '\0'; ++i) {

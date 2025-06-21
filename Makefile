@@ -1,5 +1,5 @@
-CC=i686-elf-gcc
-LD=i686-elf-ld
+CC=i686-linux-gnu-gcc
+LD=i686-linux-gnu-ld
 CFLAGS=-ffreestanding -O2 -Wall -Wextra
 LDFLAGS=-T src/linker.ld -nostdlib
 
