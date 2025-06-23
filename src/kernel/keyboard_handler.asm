@@ -1,8 +1,8 @@
-; filepath: src/kernel/keyboard_handler.asm
 [BITS 32]
 extern keyboard_handler_main
 global keyboard_handler
 keyboard_handler:
+    cli
     pusha
     in al, 0x60
     push eax

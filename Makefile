@@ -29,13 +29,16 @@ $(BUILD_DIR)/%.o: src/%.c
 $(BUILD_DIR)/keyboard_handler.o: src/kernel/keyboard_handler.asm
 	$(NASM) -f elf32 $< -o $@
 
+$(BUILD_DIR)/isr_stubs.o: src/kernel/isr_stubs.asm
+	$(NASM) -f elf32 $< -o $@
+
 # Assemble the multiboot header
 $(OBJ_ASM): $(SRC_ASM)
 	mkdir -p $(dir $@)
 	$(NASM) -f elf32 $< -o $@
 
 # Link the kernel binary
-$(BUILD_DIR)/$(TARGET): $(OBJ_ASM) $(OBJ_C) $(BUILD_DIR)/keyboard_handler.o
+$(BUILD_DIR)/$(TARGET): $(OBJ_ASM) $(OBJ_C) $(BUILD_DIR)/keyboard_handler.o $(BUILD_DIR)/isr_stubs.o
 	$(LD) $(LDFLAGS) -o $@ $^
 
 # Build ISO image
@@ -47,7 +50,7 @@ iso: all
 
 # Run with QEMU
 run: iso
-	qemu-system-i386 -cdrom $(ISO)
+	qemu-system-i386 -cdrom $(ISO) -serial stdio
 
 # Clean build artifacts
 clean:

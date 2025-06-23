@@ -18,11 +18,14 @@ void clear_screen() {
 void kernel_main() {
     clear_screen();
     print("Welcome to jakOS!\n> ");
+    
+    pic_remap();
     idt_init();
     keyboard_install();
-    __asm__ volatile ("sti"); // Enable interrupts
+
+    __asm__ volatile ("sti");
 
     while (1) {
-        __asm__ volatile ("hlt");
+        __asm__ volatile ("hlt\n\t");
     }
 }

@@ -9,3 +9,11 @@ void isr_install() {
 
     idt_set_gate(33, (uint32_t)keyboard_handler, 0x08, 0x8E);  // IRQ1 = 0x20 + 1
 }
+
+void isr_handler(uint32_t int_no) {
+    print ("CPU Exception was thrown!\n");
+    print_com1 ("CPU excep!!!");
+    while (1) {
+        __asm__ volatile ("hlt");
+    }
+}
