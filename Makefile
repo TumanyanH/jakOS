@@ -26,13 +26,8 @@ $(BUILD_DIR)/%.o: src/%.c
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Assemble idt_load.asm
-$(BUILD_DIR)/idt_load.o: src/kernel/idt_load.asm
-	mkdir -p $(dir $@)
-	nasm -f elf32 $< -o $@
-
 $(BUILD_DIR)/keyboard_handler.o: src/kernel/keyboard_handler.asm
-	nasm -f elf32 $< -o $@
+	$(NASM) -f elf32 $< -o $@
 
 # Assemble the multiboot header
 $(OBJ_ASM): $(SRC_ASM)
@@ -40,7 +35,7 @@ $(OBJ_ASM): $(SRC_ASM)
 	$(NASM) -f elf32 $< -o $@
 
 # Link the kernel binary
-$(BUILD_DIR)/$(TARGET): $(OBJ_ASM) $(OBJ_C) $(BUILD_DIR)/idt_load.o
+$(BUILD_DIR)/$(TARGET): $(OBJ_ASM) $(OBJ_C) $(BUILD_DIR)/keyboard_handler.o
 	$(LD) $(LDFLAGS) -o $@ $^
 
 # Build ISO image
@@ -58,3 +53,5 @@ run: iso
 clean:
 	rm -rf $(BUILD_DIR) $(ISO_DIR) $(ISO)
 
+re: clean all
+	rm -rf $(BUILD_DIR) $(ISO_DIR) $(ISO)

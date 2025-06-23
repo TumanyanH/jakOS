@@ -2,6 +2,7 @@
 #include "io.h"
 #include "isr.h"
 #include "kbd.h"
+#include "idt.h"
 
 #define VGA_ADDRESS 0xB8000
 #define VGA_WIDTH 80
@@ -17,14 +18,11 @@ void clear_screen() {
 void kernel_main() {
     clear_screen();
     print("Welcome to jakOS!\n> ");
-    isr_install();
+    idt_init();
     keyboard_install();
+    __asm__ volatile ("sti"); // Enable interrupts
 
-    // Enable interrupts here (sti)
-
-    __asm__ volatile ("sti");
-
-    // while(1) {
-    //    __asm__ volatile ("hlt");
-    // }
+    while (1) {
+        __asm__ volatile ("hlt");
+    }
 }

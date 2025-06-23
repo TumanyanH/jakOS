@@ -2,7 +2,7 @@
 #include "idt.h"
 #include "io.h"
 
-extern void keyboard_handler();  // Declare this at the top
+extern void keyboard_handler();
 
 void isr_install() {
     idt_init();  // Ensure this is declared in a header (idt.h)
