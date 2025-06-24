@@ -18,9 +18,11 @@ static char scancode_to_ascii(uint8_t sc) {
 }
 
 void keyboard_handler_main(uint8_t scancode) {
-    if (scancode & 0x80) return; // Ignore key releases
-    char c = scancode_to_ascii(scancode);
-    if (c) print_char(c);
+    if (!(scancode & 0x80))
+    {
+        char c = scancode_to_ascii(scancode);
+        if (c) print_char(c);
+    }
     outb(PIC1_COMMAND, PIC_EOI);
 }
 
@@ -28,7 +30,7 @@ void keyboard_install() {
     // Only unmask IRQ1 (keyboard)
     uint8_t mask = 0xFF; // Mask all
     mask &= ~(1 << 1);   // Unmask IRQ1
-    outb(0x21, mask); // <-------------------------- koza
+    outb(0x21, mask);
 }
 
 
