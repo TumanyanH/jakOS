@@ -32,13 +32,16 @@ $(BUILD_DIR)/keyboard_handler.o: src/kernel/keyboard_handler.asm
 $(BUILD_DIR)/isr_stubs.o: src/kernel/isr_stubs.asm
 	$(NASM) -f elf32 $< -o $@
 
+$(BUILD_DIR)/gdt_flush.o: src/kernel/gdt_flush.asm
+	$(NASM) -f elf32 $< -o $@
+
 # Assemble the multiboot header
 $(OBJ_ASM): $(SRC_ASM)
 	mkdir -p $(dir $@)
 	$(NASM) -f elf32 $< -o $@
 
 # Link the kernel binary
-$(BUILD_DIR)/$(TARGET): $(OBJ_ASM) $(OBJ_C) $(BUILD_DIR)/keyboard_handler.o $(BUILD_DIR)/isr_stubs.o
+$(BUILD_DIR)/$(TARGET): $(OBJ_ASM) $(OBJ_C) $(BUILD_DIR)/keyboard_handler.o $(BUILD_DIR)/isr_stubs.o $(BUILD_DIR)/gdt_flush.o
 	$(LD) $(LDFLAGS) -o $@ $^
 
 # Build ISO image
