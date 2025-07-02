@@ -1,15 +1,6 @@
 #include "pmm.h"
 
-#define MAX_SEGMENTS 8
-
-uint8_t* bitmap;
-uint32_t __pmm_total_pages;
-
-static pmm_segment_t segment_pool[MAX_SEGMENTS];
-static int segment_index = 0;
-
-pmm_segment_t *__pmm_g = NULL;
-
+pmm_segment_t* __pmm_g = NULL;
 
 void pmm_debug_print(void) {
     pmm_segment_t* seg = __pmm_g;
@@ -45,11 +36,12 @@ static void pmm_seg_bitmap(multiboot_mmap_entry_t *mmap) {
         bitmap[i] = 0x00;
     }
 
-    seg->bm_start       = bitmap_start;
-    seg->bm_end         = bitmap + bitmap_bytes;
-    seg->seg            = mmap;
-    seg->count_pages    = pages_count;
-    seg->next           = NULL;
+    seg->bm_start        = bitmap_start;
+    seg->bm_end          = bitmap + bitmap_bytes;
+    seg->seg             = mmap;
+    seg->count_pages     = pages_count;
+    seg->available_pages = pages_count;
+    seg->next            = NULL;
 
     if (!__pmm_g) {
         __pmm_g = seg;
@@ -88,4 +80,7 @@ void __pmm_mem_init(multiboot_info_t* mboot, uint32_t __k_end) {
     }
 
     pmm_debug_print();
+
+    // pmm_malloc((uint32_t)10);
+
 }
