@@ -6,4 +6,6 @@ OUTPUT_FORMAT(elf32-i386)
             .text : { *(.text) }
             .data : { *(.data) }
             .bss  : { *(.bss) }
+
+            PROVIDE (__end = .);
         }  
