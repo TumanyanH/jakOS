@@ -4,9 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// #include "pmm_malloc.h"
 #define MBOOT_OK_FLAG 0x40
-#define MAX_SEGMENTS 8
+#define MAX_SEGMENTS 32
 
 typedef struct multiboot_mmap_entry {
     uint32_t size;
@@ -26,7 +25,7 @@ typedef struct multiboot_info {
     uint32_t syms[4];
     uint32_t mmap_length;
     uint32_t mmap_addr;
-} __attribute__((packed)) multiboot_info_t;
+} __attribute__((packed)) mboot_info_t;
 
 typedef struct {
     uint8_t* bm_start;
@@ -38,10 +37,9 @@ typedef struct {
 } pmm_segment_t;
 
 
-static pmm_segment_t segment_pool[MAX_SEGMENTS];
-static int segment_index = 0;
-
 extern pmm_segment_t *__pmm_g;
+extern pmm_segment_t segment_pool[MAX_SEGMENTS];
+extern int segment_index;
 
 uint8_t* bitmap;
 uint32_t __pmm_total_pages;

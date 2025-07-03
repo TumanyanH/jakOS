@@ -2,6 +2,14 @@
 
 pmm_segment_t* __pmm_g = NULL;
 
+pmm_segment_t segment_pool[MAX_SEGMENTS];
+int segment_index = 0;
+
+pmm_segment_t* alloc_segment() {
+    if (segment_index >= MAX_SEGMENTS) return NULL;
+    return &segment_pool[segment_index++];
+}
+
 void pmm_debug_print(void) {
     pmm_segment_t* seg = __pmm_g;
 
@@ -28,7 +36,7 @@ static void pmm_seg_bitmap(multiboot_mmap_entry_t *mmap) {
     }
     uint32_t pages_count = (uint32_t)(mmap->len / 0x1000);
     uint32_t bitmap_bytes = (pages_count + 7) / 8;
-    pmm_segment_t *seg = &segment_pool[segment_index++];
+    pmm_segment_t *seg = alloc_segment();
 
     uint8_t *bitmap_start = bitmap;
 
@@ -57,7 +65,7 @@ static void pmm_seg_bitmap(multiboot_mmap_entry_t *mmap) {
     bitmap += bitmap_bytes;
 }
 
-void __pmm_mem_init(multiboot_info_t* mboot, uint32_t __k_end) {
+void __pmm_mem_init(mboot_info_t* mboot, uint32_t __k_end) {
     dbg_print_f("[KERNEL][MEMORY]: Initializing... \n");
 
     if (!(mboot->flags & MBOOT_OK_FLAG)) {
@@ -80,7 +88,4 @@ void __pmm_mem_init(multiboot_info_t* mboot, uint32_t __k_end) {
     }
 
     pmm_debug_print();
-
-    // pmm_malloc((uint32_t)10);
-
 }
