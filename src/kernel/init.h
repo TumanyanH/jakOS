@@ -9,8 +9,11 @@
 #include "idt.h"
 #include "multiboot.h"
 #include "display.h"
+#include "pmm.h"
+#include "vmm.h"
 
-void k_init_keyboard();
 void k_init_general();
+void k_init_memory(multiboot_info_t* mboot);
+void k_init_keyboard();
 
 #endif

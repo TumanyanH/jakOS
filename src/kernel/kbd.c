@@ -27,6 +27,7 @@ void keyboard_handler_main(uint8_t scancode) {
 }
 
 void keyboard_install() {
+    dbg_print_f("[KERNEL][KBD]: Initializing...\n");
     // Only unmask IRQ1 (keyboard)
     uint8_t mask = 0xFF; // Mask all
     mask &= ~(1 << 1);   // Unmask IRQ1

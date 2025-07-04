@@ -1,7 +1,14 @@
 #include "pmm_malloc.h"
 
+pmm_segment_t pool[MAX_SEGMENTS];
+int pool_index = 0;
+
+/**
+ * helper function since there
+ * is no any allocation functionality
+ */
 pmm_segment_t *alloc_inside_arr() {
-    if (pool_index >= MAX_SEG) return NULL;
+    if (pool_index >= MAX_SEGMENTS) return NULL;
     return &pool[pool_index++];
 }
 
@@ -14,7 +21,6 @@ pmm_segment_t *alloc_inside_arr() {
  * 
  * @return multiple pointers (pmm_segment_t *)
  * if given size fits inside different segments
- * 
  */
 static pmm_segment_t *find_applicable_segment(uint32_t size) {
     pmm_segment_t *iter = __pmm_g;
@@ -23,15 +29,11 @@ static pmm_segment_t *find_applicable_segment(uint32_t size) {
 
     uint32_t collected = 0;
 
-    dbg_print_f("Looking for %d pages\n", size);
-
     while (iter && collected < size) {
         if (iter->available_pages == 0) {
             iter = iter->next;
             continue;
         }
-
-        dbg_print_f("Trying segment %x with %d pages\n", (uint32_t)iter, iter->available_pages);
 
         pmm_segment_t *new_seg = alloc_inside_arr();
         *new_seg = *iter;
@@ -45,18 +47,15 @@ static pmm_segment_t *find_applicable_segment(uint32_t size) {
             res_tail = res_tail->next;
         }
 
-
         if (iter->available_pages > (size - collected)) collected += size - collected;
         else collected += iter->available_pages;
-        
+
         iter = iter->next;
     }
 
     if (collected >= size) {
-        dbg_print_f("Success! Collected %d pages\n", collected);
         return res_head;
     } else {
-        dbg_print_f("Failed. Only collected %d pages\n", collected);
         return NULL;
     }
 }
@@ -64,6 +63,9 @@ static pmm_segment_t *find_applicable_segment(uint32_t size) {
 /**
  * changes memory status on the bitmap 
  * accordingly to used pages
+ * 
+ * @param   using_segments (pmm_segment_t pointer to selected segements)
+ * @param   size (uint32_t)
  */
 void change_memory_status (pmm_segment_t *using_segments, uint32_t size) {
     pmm_segment_t *iter = using_segments;
@@ -72,9 +74,10 @@ void change_memory_status (pmm_segment_t *using_segments, uint32_t size) {
     while (iter) {
         uint32_t seg_alloc_size = 
             (iter->available_pages > (size - collected) 
-                ? iter->available_pages - size - collected
+                ? (size - collected)
                 : iter->available_pages );
         collected += seg_alloc_size; 
+        iter->available_pages -= seg_alloc_size;
 
         uint32_t iter_count = 0;
         while (iter_count < seg_alloc_size / 8 ) {
@@ -89,24 +92,36 @@ void change_memory_status (pmm_segment_t *using_segments, uint32_t size) {
         }
         
         iter = iter->next;
-
-        
     }
-
-    
-    // need to change the free flags inside
-    // bitmap to used (0 to 1)
-    // also another function should be 
-    // implemented for gathering all the phys memory
-    // pointers and pass them to vmm 
 }
 
+void print_bitmap(pmm_segment_t *seg) {
+    dbg_print_f("Bitmap for segment at %d:\n", (uint32_t)seg);
 
+    uint8_t *start = seg->bm_start;
+    uint8_t *end   = seg->bm_end;
+
+    int byte_index = 0;
+    while (start < end) {
+        dbg_print_f("Byte %d: ", byte_index);
+        for (int bit = 7; bit >= 0; bit--) {
+            int bit_value = (*start >> bit) & 1;
+            dbg_print_f("%d", bit_value);
+        }
+        dbg_print_f("\n");
+        start++;
+        byte_index++;
+    }
+
+    dbg_print_f("End of bitmap.\n");
+}
 
 /**
  * takes size in pages and changes inside bitmap all needed flagss
+ * 
+ * @param   size (uint32_t)
  */
-void pmm_malloc(uint32_t size) {
+pmm_segment_t *__pmm_malloc(uint32_t size) {
     pmm_segment_t *using_segments = find_applicable_segment(size);
     
     // pmm_segment_t *iter = using_segments;
@@ -125,23 +140,5 @@ void pmm_malloc(uint32_t size) {
     // dbg_print_f("---- End Found Memory Segments ----\n");
     
     change_memory_status(using_segments, size);
-    pmm_segment_t *seg = using_segments;
-        dbg_print_f("Bitmap for segment at %d:\n", (uint32_t)seg);
-
-        uint8_t *start = seg->bm_start;
-        uint8_t *end   = seg->bm_end;
-
-        int byte_index = 0;
-        while (start <= end) {
-            dbg_print_f("Byte %d: ", byte_index);
-            for (int bit = 7; bit >= 0; bit--) {
-                int bit_value = (*start >> bit) & 1;
-                dbg_print_f("%d", bit_value);
-            }
-            dbg_print_f("\n");
-            start++;
-            byte_index++;
-        }
-
-        dbg_print_f("End of bitmap.\n");
+    return using_segments;
 }

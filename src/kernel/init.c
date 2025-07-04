@@ -1,5 +1,4 @@
 #include "init.h"
-#include "memory/pmm/pmm.h"
 
 
 extern uint32_t __end;
@@ -27,8 +26,7 @@ void k_init_memory(multiboot_info_t* mboot)
         mboot,
         __end
     );
-
-    pmm_malloc((uint32_t)160);
+    __vmm_mem_init();
 }
 
 void k_init_keyboard()
