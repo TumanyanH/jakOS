@@ -1,17 +1,5 @@
 #include "pmm_malloc.h"
 
-pmm_segment_t pool[MAX_SEGMENTS];
-int pool_index = 0;
-
-/**
- * helper function since there
- * is no any allocation functionality
- */
-pmm_segment_t *alloc_inside_arr() {
-    if (pool_index >= MAX_SEGMENTS) return NULL;
-    return &pool[pool_index++];
-}
-
 /**
  * finds the segments which are applicable
  * 
@@ -35,23 +23,27 @@ static pmm_segment_t *find_applicable_segment(uint32_t size) {
             continue;
         }
 
-        pmm_segment_t *new_seg = alloc_inside_arr();
-        *new_seg = *iter;
-        new_seg->next = NULL;
-
         if (!res_head) {
-            res_head = new_seg;
-            res_tail = new_seg;
+            res_head = iter;
+            res_tail = iter;
         } else {
-            res_tail->next = new_seg;
-            res_tail = res_tail->next;
+            res_tail->next = iter;
+            res_tail = iter;
         }
 
-        if (iter->available_pages > (size - collected)) collected += size - collected;
-        else collected += iter->available_pages;
+        uint32_t to_consume = size - collected;
+        if (iter->available_pages > to_consume) {
+            iter->available_pages -= to_consume;
+            collected += to_consume;
+        } else {
+            collected += iter->available_pages;
+            iter->available_pages = 0;
+        }
 
         iter = iter->next;
     }
+
+    if (res_tail) res_tail->next = NULL;
 
     if (collected >= size) {
         return res_head;
@@ -60,85 +52,105 @@ static pmm_segment_t *find_applicable_segment(uint32_t size) {
     }
 }
 
-/**
- * changes memory status on the bitmap 
- * accordingly to used pages
- * 
- * @param   using_segments (pmm_segment_t pointer to selected segements)
- * @param   size (uint32_t)
- */
-void change_memory_status (pmm_segment_t *using_segments, uint32_t size) {
-    pmm_segment_t *iter = using_segments;
-    uint32_t collected = 0;
+void print_alloc_table () {
+    dbg_print_f("-------------ALLOCATION TABLE-------------\n");
+    pmm_alloc_t *iter = __pmm_alloc_table_g;
 
-    while (iter) {
-        uint32_t seg_alloc_size = 
-            (iter->available_pages > (size - collected) 
-                ? (size - collected)
-                : iter->available_pages );
-        collected += seg_alloc_size; 
-        iter->available_pages -= seg_alloc_size;
-
-        uint32_t iter_count = 0;
-        while (iter_count < seg_alloc_size / 8 ) {
-            
-            *(iter->bm_start + iter_count) = 0xFF;
-            iter_count++;
-        }
-        uint32_t i = 0;
-        while (i < seg_alloc_size % 8) {
-            iter->bm_start[iter_count] |= (1 << i);
-            i++;
-        }
-        
+    while (iter)
+    {
+        dbg_print_f("PID %d\n", iter->pid);
+        dbg_print_f("SEGMENT ADDR %x\n", iter->segment->seg->addr);
+        dbg_print_f("ALLOCATION LEN %d\n", iter->pages_allocated);
+        dbg_print_f("OFFSET %d\n", iter->segment_page_offset);
+        dbg_print_f("+++++++++++++++++++++++++++++++++++\n");
         iter = iter->next;
+    }
+    dbg_print_f("-----------ALLOCATION TABLE END------------\n");
+}
+
+uint32_t seg_find_free(pmm_segment_t *seg, uint32_t *collected, uint32_t size) {
+    uint8_t *bm_start = seg->bm_start;
+
+    uint32_t offset = 0;
+    int found = 0;
+    int count = 0;
+    while (bm_start < seg->bm_end) {
+        for (int i = 0; i < 8; i++)
+        {
+            if (((*bm_start >> i) & 1) == 0)
+            {
+                if (found == 0) offset = ((bm_start - seg->bm_start) * 8) + i; 
+                found = 1;
+                (*collected)++;
+                count++;
+            }
+            if ((*collected) == size || (((*bm_start >> i) & 1) && found == 1))
+            {
+                return offset;
+            }
+        }
+        bm_start++;
+    }
+    return 0;
+}
+
+void mark_used(pmm_segment_t *seg, uint32_t offset, uint32_t size) {
+    for (uint32_t i = 0; i < size; i++) {
+        uint32_t bit_index = offset + i;
+        uint32_t byte_index = bit_index / 8;
+        uint32_t bit_in_byte = bit_index % 8;
+        seg->bm_start[byte_index] |= (1 << bit_in_byte);
     }
 }
 
-void print_bitmap(pmm_segment_t *seg) {
-    dbg_print_f("Bitmap for segment at %d:\n", (uint32_t)seg);
+uint64_t alloc_space(pmm_segment_t* using_segments, uint32_t size) {
+    uint32_t collected = 0;
+    pmm_segment_t *iter = using_segments;
+    uint64_t start_addr = iter->seg->addr;
+    pmm_alloc_t *alloc = alloc_alloc();
+    int first_iter = 1;
 
-    uint8_t *start = seg->bm_start;
-    uint8_t *end   = seg->bm_end;
-
-    int byte_index = 0;
-    while (start < end) {
-        dbg_print_f("Byte %d: ", byte_index);
-        for (int bit = 7; bit >= 0; bit--) {
-            int bit_value = (*start >> bit) & 1;
-            dbg_print_f("%d", bit_value);
+    while (iter && collected < size) {
+        uint32_t offset = seg_find_free(iter, &collected, size);
+        if (first_iter) {
+            start_addr += (uint64_t)offset * PAGE_SIZE;
+            first_iter = 0;
         }
-        dbg_print_f("\n");
-        start++;
-        byte_index++;
-    }
+        mark_used(iter, offset, size);
+        
+        
+        alloc->pages_allocated = size;
+        alloc->segment = iter;
+        alloc->segment_page_offset = offset;
+        alloc->next = NULL;
+        
+        if (!__pmm_alloc_table_g) {
+            __pmm_alloc_table_g = alloc;
+        } else {
+            pmm_alloc_t *table = __pmm_alloc_table_g;
+            while (table->next)
+                table = table->next;
 
-    dbg_print_f("End of bitmap.\n");
+            table->next = alloc;
+        }
+        iter = iter->next;
+    }
+    return start_addr;
 }
 
 /**
  * takes size in pages and changes inside bitmap all needed flagss
  * 
  * @param   size (uint32_t)
+ * 
+ * @return  address of allocated space (uint64_t)
  */
-pmm_segment_t *__pmm_malloc(uint32_t size) {
+void *__pmm_malloc(uint32_t size) {
     pmm_segment_t *using_segments = find_applicable_segment(size);
-    
-    // pmm_segment_t *iter = using_segments;
-    // dbg_print_f("---- Found Memory Segments ----\n");
-    // while (iter) {
-    //     dbg_print_f("Segment:\n");
-    //     dbg_print_f("  seg_addr:  %x\n", (uint32_t)iter);
-    //     dbg_print_f("  mmap addr: %x\n", (uint32_t)iter->seg->addr);
-    //     dbg_print_f("  mmap len:  %x\n", (uint32_t)iter->seg->len);
-    //     dbg_print_f("  type:      %d\n", iter->seg->type);
-    //     dbg_print_f("  pages:     %d\n", iter->count_pages);
-    //     dbg_print_f("  bitmap:    start=%x end=%x\n", (uint32_t)iter->bm_start, (uint32_t)iter->bm_end);
-    //     dbg_print_f("  next:      %x\n", (uint32_t)iter->next);
-    //     iter = iter->next;
-    // }
-    // dbg_print_f("---- End Found Memory Segments ----\n");
-    
-    change_memory_status(using_segments, size);
-    return using_segments;
+    if (!using_segments) return NULL;
+
+    uint64_t act_addr = alloc_space(using_segments, size);
+    if (!act_addr) return NULL;
+
+    return act_addr;
 }

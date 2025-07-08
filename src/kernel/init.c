@@ -22,11 +22,14 @@ void k_init_general()
 void k_init_memory(multiboot_info_t* mboot)
 {
     print_f("The start of PHYMEM is %x \n", &__end);
-    __pmm_mem_init(
+    pmm_segment_t *pmm_seg = __pmm_mem_init(
         mboot,
-        __end
+        &__end
     );
-    __vmm_mem_init();
+    
+    // __vmm_mem_init(
+    //     pmm_seg
+    // );
 }
 
 void k_init_keyboard()

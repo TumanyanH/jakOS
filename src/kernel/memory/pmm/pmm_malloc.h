@@ -3,6 +3,6 @@
 
 #include "pmm.h" 
 
-pmm_segment_t *__pmm_malloc(uint32_t size);
+void *__pmm_malloc(uint32_t size);
 
 #endif

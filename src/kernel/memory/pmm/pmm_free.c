@@ -1,7 +1,11 @@
 #include "pmm_free.h"
 
-void __pmm_free(uint64_t addr, uint32_t size) {
+void __pmm_free(void *addr, uint32_t size) {
     pmm_segment_t *seg = find_pmm_seg_by_addr(addr);
+    if (!seg) {
+        dbg_print_f("[KERNEL][PMM]: Tried to free memory at address %x, but no segment found\n", addr);
+        return;
+    }
     uint64_t dist = addr - seg->seg->addr;
     uint32_t pg_idx = (uint32_t)dist / PAGE_SIZE;
     uint32_t byte_idx = pg_idx / 8;

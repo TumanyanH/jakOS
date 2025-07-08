@@ -10,11 +10,15 @@
  */
 pmm_segment_t *find_pmm_seg_by_addr(uint64_t addr) {
     pmm_segment_t *iter = __pmm_g;
+
     while (iter) {
-        if (addr >= iter->seg->addr && addr < (iter->seg->addr + iter->seg->len))
-            return iter;
-        iter++;
+        uint64_t seg_start = iter->seg->addr;
+        uint64_t seg_end   = seg_start + iter->seg->len;
+
+        if ((uint32_t)addr >= (uint32_t)seg_start && (uint32_t)addr < (uint32_t)seg_end)             return iter;
+        iter = iter->next;
     }
+
     return NULL;
 }
 
@@ -25,8 +29,9 @@ pmm_segment_t *find_pmm_seg_by_addr(uint64_t addr) {
  * 
  * @return  int (true if it's used)
  */
-int __pmm_is_used(uint64_t addr) {
+int __pmm_page_is_used(uint64_t addr) {
     pmm_segment_t *seg = find_pmm_seg_by_addr(addr);
+    if (!seg) return -1;
     uint64_t dist = addr - seg->seg->addr;
     uint32_t pg_idx = (uint32_t)dist / PAGE_SIZE;
     uint32_t byte_idx = pg_idx / 8;

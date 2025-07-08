@@ -3,8 +3,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#define VM_START 0xC0000000 
 #include "pmm.h"
+
+#define VM_START 0xC0000000
 
 typedef struct {
     uint32_t start;

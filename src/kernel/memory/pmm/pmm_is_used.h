@@ -3,6 +3,6 @@
 
 #include "pmm.h" 
 
-int __pmm_is_used(uint64_t addr);
+int __pmm_page_is_used(uint64_t addr);
 
 #endif
