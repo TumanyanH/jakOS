@@ -11,6 +11,7 @@
 #include "display.h"
 #include "pmm.h"
 #include "vmm.h"
+#include "heap.h"
 
 void k_init_general();
 void k_init_memory(multiboot_info_t* mboot);

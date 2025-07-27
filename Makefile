@@ -21,7 +21,6 @@ all: $(BUILD_DIR)/$(TARGET)
 check_deps:
 	sudo apt update && sudo apt install -y build-essential nasm grub-pc-bin xorriso qemu-system-i386
 
-# Compile C source files
 $(BUILD_DIR)/%.o: src/%.c
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -35,27 +34,29 @@ $(BUILD_DIR)/isr_stubs.o: src/kernel/isr_stubs.asm
 $(BUILD_DIR)/gdt_flush.o: src/kernel/gdt_flush.asm
 	$(NASM) -f elf32 $< -o $@
 
-# Assemble the multiboot header
 $(OBJ_ASM): $(SRC_ASM)
 	mkdir -p $(dir $@)
 	$(NASM) -f elf32 $< -o $@
 
-# Link the kernel binary
 $(BUILD_DIR)/$(TARGET): $(OBJ_ASM) $(OBJ_C) $(BUILD_DIR)/keyboard_handler.o $(BUILD_DIR)/isr_stubs.o $(BUILD_DIR)/gdt_flush.o
 	$(LD) $(LDFLAGS) -o $@ $^
 
-# Build ISO image
 iso: all
 	mkdir -p $(ISO_DIR)/boot/grub
 	cp $(BUILD_DIR)/$(TARGET) $(ISO_DIR)/boot/$(TARGET)
 	cp boot/grub/grub.cfg $(ISO_DIR)/boot/grub
 	grub-mkrescue -o $(ISO) $(ISO_DIR)
 
-# Run with QEMU
 run: iso
-	qemu-system-i386 -cdrom $(ISO) -serial stdio
+	qemu-system-i386 -cdrom $(ISO) -m 512M \
+		-drive file=nvme.img,if=none,id=nvme0,format=raw \
+  		-device nvme,drive=nvme0,serial=deadbeef \
+		-serial stdio
 
-# Clean build artifacts
+nvme:
+	qemu-img create -f raw nvme.img 64M
+	ls -lh nvme.img
+
 clean:
 	rm -rf $(BUILD_DIR) $(ISO_DIR) $(ISO)
 

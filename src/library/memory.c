@@ -9,12 +9,6 @@ void heap_init() {
     
 };
 
-void *kmalloc(size_t size) {
-    void *mem = (void*)heap;
-    heap += size;
-    heap_size += size;
-    return mem;
-}
 
 void *memset(void *dest, int val, size_t len) {
     unsigned char *ptr = dest;

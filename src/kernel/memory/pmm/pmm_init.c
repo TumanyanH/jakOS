@@ -50,7 +50,7 @@ void pmm_debug_print(void) {
 
 static void pmm_seg_bitmap(multiboot_mmap_entry_t *mmap) {
     if (segment_index >= MAX_SEGMENTS) {
-        dbg_print_f("[KERNEL][PPM]: Segments are too much!");
+        dbg_print_f("[KERNEL][PMM]: Segments are too much!");
         return ;
     }
     uint32_t pages_count = (uint32_t)(mmap->len / 0x1000);
@@ -114,21 +114,21 @@ void bitmap_debug_print(uint8_t *start, uint8_t *end) {
 }
 
 void __pmm_mem_init(mboot_info_t* mboot, uint32_t __k_end) {
-    dbg_print_f("[KERNEL][PPM]: Initializing... \n");
+    dbg_print_f("[KERNEL][PMM]: Initializing... \n");
 
     if (!(mboot->flags & MBOOT_OK_FLAG)) {
-        dbg_print_f("[KERNEL][PPM]: No available memory \n");
+        dbg_print_f("[KERNEL][PMM]: No available memory \n");
         return ;
     }
 
     __usable = __k_end;
-    dbg_print_f("[KERNEL][PPM]: Start of usable memory detected - %x\n", __usable);
+    dbg_print_f("[KERNEL][PMM]: Start of usable memory detected - %x\n", __usable);
     multiboot_mmap_entry_t* mmap = (multiboot_mmap_entry_t*) mboot->mmap_addr;
     uint32_t mmap_end = mboot->mmap_addr + mboot->mmap_length;
 
     while ((uint32_t)mmap < mmap_end) {  
         if (mmap->type == 1 && mmap->addr >= KERNEL_START) {
-            dbg_print_f("[KERNEL][PPM]: Available segment %x of length %d\n",
+            dbg_print_f("[KERNEL][PMM]: Available segment %x of length %d\n",
                 (uint32_t)mmap->addr,
                 (uint32_t)mmap->len);
             if (mmap->addr == KERNEL_START && mmap->len >= 0x00400000) {

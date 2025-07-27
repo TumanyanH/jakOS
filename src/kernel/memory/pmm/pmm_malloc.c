@@ -1,5 +1,17 @@
 #include "pmm_malloc.h"
 
+uint32_t next_kernel_struct_phys = 0x00100000;
+
+void* __pmm_alloc_lowmem_page() {
+    uint32_t addr = (next_kernel_struct_phys + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1); // align to 4KB
+    if (addr >= 0x00400000) {
+        dbg_print_f("[PMM][ERR]: Out of low memory (<4MB)!\n");
+        while(1);
+    }
+    next_kernel_struct_phys = addr + PAGE_SIZE;
+    return (void*) addr;
+}
+
 /**
  * finds the segments which are applicable
  * 

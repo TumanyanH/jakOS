@@ -8,6 +8,15 @@ isr%1:
     jmp isr_common_stub
 %endmacro
 
+; Macro for exceptions where CPU DOES push an error code
+%macro isr_stub_err 1
+global isr%1
+isr%1:
+    cli
+    push dword %1    ; push interrupt number
+    jmp isr_common_stub
+%endmacro
+
 isr_stub 0
 isr_stub 1
 isr_stub 2
@@ -22,7 +31,8 @@ isr_stub 10
 isr_stub 11
 isr_stub 12
 isr_stub 13
-isr_stub 14
+
+isr_stub_err 14  
 isr_stub 15
 isr_stub 16
 isr_stub 17
@@ -41,10 +51,13 @@ isr_stub 29
 isr_stub 30
 isr_stub 31
 
+
 extern isr_handler
 isr_common_stub:
     pusha
+    push esp                ; pointer to struct regs
     call isr_handler
+    add esp, 4              ; clean argument
     popa
-    add esp, 8
+    add esp, 8              ; clean interrupt number + error code
     iretd
