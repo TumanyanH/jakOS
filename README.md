@@ -44,7 +44,7 @@ cd jakOS
 make
 ```
 
-> ⚠️ Since project is widly using hardware emulation and virtualization, please make sure to check the most up-to-date **make run** and QEMU run commands before running.
+> ⚠️ Since project is widely using hardware emulation and virtualization, please make sure to check the most up-to-date **make run** and QEMU run commands before running.
 
 # 📚 About
 jakOS is being built as part of a journey to deeply understand operating system fundamentals:
