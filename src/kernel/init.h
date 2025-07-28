@@ -12,9 +12,11 @@
 #include "pmm.h"
 #include "vmm.h"
 #include "heap.h"
+#include "pci.h"
 
-void k_init_general();
+void k_init_general(void);
 void k_init_memory(multiboot_info_t* mboot);
-void k_init_keyboard();
+void k_init_keyboard(void);
+void k_init_devices(void);
 
 #endif

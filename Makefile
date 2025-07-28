@@ -49,8 +49,8 @@ iso: all
 
 run: iso
 	qemu-system-i386 -cdrom $(ISO) -m 512M \
-		-drive file=nvme.img,if=none,id=nvme0,format=raw \
-  		-device nvme,drive=nvme0,serial=deadbeef \
+		-drive file=nvme.img,format=raw,if=none,id=nvme0-disk0 \
+  		-device nvme,serial=deadbeef,drive=nvme0-disk0 \
 		-serial stdio
 
 nvme:
