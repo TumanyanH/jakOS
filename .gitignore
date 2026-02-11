@@ -1,2 +1,14 @@
-binutils-2.36.1.tar.xz
-nvme.img
+# Compressed archives (like binutils, gcc, etc.)
+*.tar.xz
+*.tar.gz
+*.zip
+
+# Disk images and binaries
+*.img
+*.bin
+*.iso
+
+# Build directories (if you use them)
+build/
+bin/
+iso/
