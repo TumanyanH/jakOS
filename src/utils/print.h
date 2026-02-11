@@ -1,6 +1,8 @@
 #ifndef PRINT_H
 #define PRINT_H
 
+#include "../library/string.h"
+
 void print_char(char c);
 void print(const char* str);
 void print_f(const char* format, ...);

@@ -149,8 +149,18 @@ void print_f(const char* format, ...) {
     va_end(args);
 }
 
-
 void dbg_print_f(const char* format, ...) {
+    // Map color name to ANSI code
+    // const char* color_code = "";
+    // if (strcmp(color, "red") == 0)       color_code = "\033[31m";
+    // else if (strcmp(color, "green") == 0) color_code = "\033[32m";
+    // else if (strcmp(color, "yellow") == 0) color_code = "\033[33m";
+    // else if (strcmp(color, "blue") == 0)  color_code = "\033[34m";
+    // else color_code = "\033[0m"; // default
+
+    // Print color prefix
+    // print_com1(color_code);
+
     va_list args;
     va_start(args, format);
 
@@ -194,4 +204,7 @@ void dbg_print_f(const char* format, ...) {
     }
 
     va_end(args);
+
+    // Reset to default color + newline
+    // print_com1("\033[0m\n");
 }

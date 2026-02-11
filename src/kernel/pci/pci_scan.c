@@ -156,27 +156,6 @@ pci_class_t pci_classes[] = {
     {0xFF, 0xFF, NULL}
 };
 
-uint32_t pci_config_read_dword(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
-    uint32_t address =
-        (1U << 31) |                   // enable bit
-        ((uint32_t)bus << 16) |
-        ((uint32_t)device << 11) |
-        ((uint32_t)function << 8) |
-        (offset & 0xFC);               // aligned to dword
-
-    outl(0xCF8, address);
-    return inl(0xCFC);
-}
-uint16_t pci_config_read_word(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
-    uint32_t data = pci_config_read_dword(bus, device, function, offset);
-    return (offset & 2) ? (data >> 16) & 0xFFFF : data & 0xFFFF;
-}
-
-uint8_t pci_config_read_byte(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset) {
-    uint32_t data = pci_config_read_dword(bus, device, function, offset);
-    return (data >> ((offset & 3) * 8)) & 0xFF;
-}
-
 static void print_pci_device(
     uint16_t vendor_id,
     uint8_t class_code,
@@ -226,9 +205,10 @@ void __pci_scan(void) {
                 uint8_t prog_if = pci_config_read_byte(bus, device, function, 0x09);
 
                 print_pci_device(vendor_id, class_code, subclass, device_id, prog_if);
+                set_pci_bus_options(class_code, subclass, bus, device, function);
                 // optional: read BAR0
                 uint32_t bar0 = pci_config_read_dword(bus, device, function, 0x10);
-                // dbg_print_f("        BAR0 = %x\n", bar0);
+                dbg_print_f("        BAR0 = %x\n", bar0);
             }
         }
     }
